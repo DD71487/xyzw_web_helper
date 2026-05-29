@@ -1,0 +1,473 @@
+import { _ as E } from "./xiaoyugan-Dwisk7G8.js";
+import {
+  k as c,
+  c as f,
+  h as d,
+  a as e,
+  x as H,
+  s as P,
+  v as W,
+  r as I,
+  b as t,
+  w as n,
+  d as u,
+  e as k,
+  A as g,
+  u as l,
+  J as C,
+  f as U,
+  K as x,
+  t as X,
+} from "./index-BUwMeHKm.js";
+import { T as Y, H as b } from "./ThemeToggle-i1AMbdGp.js";
+import { _ as Z } from "./_plugin-vue_export-helper-DlAUqK2U.js";
+import { M as J } from "./Menu-y2o6ukBF.js";
+import { C as $ } from "./Cube-vacFy8Vs.js";
+import { P as y } from "./PersonCircle-BWZS_cvm.js";
+import { C as K } from "./ChevronDown-C2mH2M4K.js";
+import { S as T } from "./Settings-k37EgbhI.js";
+const R = {
+    xmlns: "http://www.w3.org/2000/svg",
+    "xmlns:xlink": "http://www.w3.org/1999/xlink",
+    viewBox: "0 0 512 512",
+  },
+  j = e(
+    "path",
+    {
+      d: "M475.22 206.52c-10.34-48.65-37.76-92.93-77.22-124.68A227.4 227.4 0 0 0 255.82 32C194.9 32 138 55.47 95.46 98.09C54.35 139.33 31.82 193.78 32 251.37a215.66 215.66 0 0 0 35.65 118.76l4.35 6.05L48 480l114.8-28.56s2.3.77 4 1.42s16.33 6.26 31.85 10.6c12.9 3.6 39.74 9 60.77 9c59.65 0 115.35-23.1 156.83-65.06C457.36 365.77 480 310.42 480 251.49a213.5 213.5 0 0 0-4.78-44.97zM160 288a32 32 0 1 1 32-32a32 32 0 0 1-32 32zm96 0a32 32 0 1 1 32-32a32 32 0 0 1-32 32zm96 0a32 32 0 1 1 32-32a32 32 0 0 1-32 32z",
+      fill: "currentColor",
+    },
+    null,
+    -1,
+  ),
+  q = [j],
+  M = c({
+    name: "ChatbubbleEllipsesSharp",
+    render: function (m, v) {
+      return (d(), f("svg", R, q));
+    },
+  }),
+  F = {
+    xmlns: "http://www.w3.org/2000/svg",
+    "xmlns:xlink": "http://www.w3.org/1999/xlink",
+    viewBox: "0 0 512 512",
+  },
+  G = e(
+    "path",
+    {
+      d: "M256 256c-13.47 0-26.94-2.39-37.44-7.17l-148-67.49C63.79 178.26 48 169.25 48 152.24s15.79-26 22.58-29.12l149.28-68.07c20.57-9.4 51.61-9.4 72.19 0l149.37 68.07c6.79 3.09 22.58 12.1 22.58 29.12s-15.79 26-22.58 29.11l-148 67.48C282.94 253.61 269.47 256 256 256zm176.76-100.86z",
+      fill: "currentColor",
+    },
+    null,
+    -1,
+  ),
+  Q = e(
+    "path",
+    {
+      d: "M441.36 226.81L426.27 220l-38.77 17.74l-94 43c-10.5 4.8-24 7.19-37.44 7.19s-26.93-2.39-37.42-7.19l-94.07-43L85.79 220l-15.22 6.84C63.79 229.93 48 239 48 256s15.79 26.08 22.56 29.17l148 67.63C229 357.6 242.49 360 256 360s26.94-2.4 37.44-7.19l147.87-67.61c6.81-3.09 22.69-12.11 22.69-29.2s-15.77-26.07-22.64-29.19z",
+      fill: "currentColor",
+    },
+    null,
+    -1,
+  ),
+  ss = e(
+    "path",
+    {
+      d: "M441.36 330.8l-15.09-6.8l-38.77 17.73l-94 42.95c-10.5 4.78-24 7.18-37.44 7.18s-26.93-2.39-37.42-7.18l-94.07-43L85.79 324l-15.22 6.84C63.79 333.93 48 343 48 360s15.79 26.07 22.56 29.15l148 67.59C229 461.52 242.54 464 256 464s26.88-2.48 37.38-7.27l147.92-67.57c6.82-3.08 22.7-12.1 22.7-29.16s-15.77-26.07-22.64-29.2z",
+      fill: "currentColor",
+    },
+    null,
+    -1,
+  ),
+  ts = [G, Q, ss],
+  L = c({
+    name: "Layers",
+    render: function (m, v) {
+      return (d(), f("svg", F, ts));
+    },
+  }),
+  ns = {
+    xmlns: "http://www.w3.org/2000/svg",
+    "xmlns:xlink": "http://www.w3.org/1999/xlink",
+    viewBox: "0 0 512 512",
+  },
+  es = e(
+    "path",
+    {
+      d: "M368 192H192v-80a64 64 0 1 1 128 0a16 16 0 0 0 32 0a96 96 0 1 0-192 0v80h-16a64.07 64.07 0 0 0-64 64v176a64.07 64.07 0 0 0 64 64h224a64.07 64.07 0 0 0 64-64V256a64.07 64.07 0 0 0-64-64z",
+      fill: "currentColor",
+    },
+    null,
+    -1,
+  ),
+  ls = [es],
+  z = c({
+    name: "LockOpen",
+    render: function (m, v) {
+      return (d(), f("svg", ns, ls));
+    },
+  }),
+  as = { class: "default-layout" },
+  os = { class: "dashboard-nav" },
+  is = { class: "nav-container" },
+  rs = { class: "nav-brand" },
+  us = { class: "nav-menu" },
+  ds = { class: "nav-user" },
+  ms = { class: "user-info" },
+  vs = { class: "username" },
+  fs = { class: "drawer-menu" },
+  ps = { class: "main" },
+  cs = {
+    __name: "DefaultLayout",
+    setup(p) {
+      const m = H(),
+        v = U(),
+        h = P(),
+        S = W(),
+        r = I(!1),
+        B = [{ label: "清除所有Token并退出", key: "logout" }],
+        D = async (_) => {
+          switch (_) {
+            case "logout":
+              S.warning({
+                title: "确认清除所有Token",
+                content:
+                  "此操作将清除所有Token数据并断开所有连接，此操作不可恢复！是否继续？",
+                positiveText: "确定清除",
+                negativeText: "取消",
+                onPositiveClick: async () => {
+                  (await m.clearAllTokens(),
+                    h.success("已清除所有Token"),
+                    v.push("/tokens"));
+                },
+              });
+              break;
+          }
+        };
+      return (_, s) => {
+        const a = u("n-icon"),
+          o = u("router-link"),
+          A = u("n-avatar"),
+          N = u("n-dropdown"),
+          O = u("n-drawer"),
+          V = u("router-view");
+        return (
+          d(),
+          f("div", as, [
+            e("nav", os, [
+              e("div", is, [
+                e("div", rs, [
+                  s[10] ||
+                    (s[10] = e(
+                      "img",
+                      { src: E, alt: "XYZW", class: "brand-logo" },
+                      null,
+                      -1,
+                    )),
+                  e(
+                    "div",
+                    {
+                      class: "brand-toggle",
+                      onClick: s[0] || (s[0] = (i) => (r.value = !0)),
+                    },
+                    [
+                      t(a, null, { default: n(() => [t(l(J))]), _: 1 }),
+                      s[9] ||
+                        (s[9] = e(
+                          "span",
+                          { class: "brand-text" },
+                          "XYZW 控制台",
+                          -1,
+                        )),
+                    ],
+                  ),
+                ]),
+                e("div", us, [
+                  t(
+                    o,
+                    {
+                      to: "/admin/dashboard",
+                      class: "nav-item",
+                      "active-class": "active",
+                    },
+                    {
+                      default: n(() => [
+                        t(a, null, { default: n(() => [t(l(b))]), _: 1 }),
+                        s[11] || (s[11] = e("span", null, "首页", -1)),
+                      ]),
+                      _: 1,
+                    },
+                  ),
+                  t(
+                    o,
+                    {
+                      to: "/admin/game-features",
+                      class: "nav-item",
+                      "active-class": "active",
+                    },
+                    {
+                      default: n(() => [
+                        t(a, null, { default: n(() => [t(l($))]), _: 1 }),
+                        s[12] || (s[12] = e("span", null, "游戏功能", -1)),
+                      ]),
+                      _: 1,
+                    },
+                  ),
+                  t(
+                    o,
+                    {
+                      to: "/tokens",
+                      class: "nav-item",
+                      "active-class": "active",
+                    },
+                    {
+                      default: n(() => [
+                        t(a, null, { default: n(() => [t(l(y))]), _: 1 }),
+                        s[13] || (s[13] = e("span", null, "Token管理", -1)),
+                      ]),
+                      _: 1,
+                    },
+                  ),
+                  t(
+                    o,
+                    {
+                      to: "/admin/batch-daily-tasks",
+                      class: "nav-item",
+                      "active-class": "active",
+                    },
+                    {
+                      default: n(() => [
+                        t(a, null, { default: n(() => [t(l(L))]), _: 1 }),
+                        s[14] || (s[14] = e("span", null, "批量日常", -1)),
+                      ]),
+                      _: 1,
+                    },
+                  ),
+                  t(
+                    o,
+                    {
+                      to: "/admin/message-test",
+                      class: "nav-item",
+                      "active-class": "active",
+                    },
+                    {
+                      default: n(() => [
+                        t(a, null, { default: n(() => [t(l(M))]), _: 1 }),
+                        s[15] || (s[15] = e("span", null, "消息测试", -1)),
+                      ]),
+                      _: 1,
+                    },
+                  ),
+                  l(C)()
+                    ? (d(),
+                      k(
+                        o,
+                        {
+                          key: 0,
+                          to: "/admin/legion-war",
+                          class: "nav-item",
+                          "active-class": "active",
+                        },
+                        {
+                          default: n(() => [
+                            t(a, null, { default: n(() => [t(l(z))]), _: 1 }),
+                            s[16] || (s[16] = e("span", null, "实时盐场", -1)),
+                          ]),
+                          _: 1,
+                        },
+                      ))
+                    : g("", !0),
+                ]),
+                e("div", ds, [
+                  t(Y),
+                  t(
+                    N,
+                    { options: B, onSelect: D },
+                    {
+                      default: n(() => {
+                        var i, w;
+                        return [
+                          e("div", ms, [
+                            t(
+                              A,
+                              {
+                                src:
+                                  ((i = l(x)) == null ? void 0 : i.avatar) ||
+                                  "/icons/xiaoyugan.png",
+                                size: "medium",
+                                "fallback-src": "/icons/xiaoyugan.png",
+                              },
+                              null,
+                              8,
+                              ["src"],
+                            ),
+                            e(
+                              "span",
+                              vs,
+                              X(
+                                ((w = l(x)) == null ? void 0 : w.name) ||
+                                  "未选择Token",
+                              ),
+                              1,
+                            ),
+                            t(a, null, { default: n(() => [t(l(K))]), _: 1 }),
+                          ]),
+                        ];
+                      }),
+                      _: 1,
+                    },
+                  ),
+                ]),
+              ]),
+            ]),
+            t(
+              O,
+              {
+                show: r.value,
+                "onUpdate:show": s[8] || (s[8] = (i) => (r.value = i)),
+                placement: "left",
+                style: { width: "260px" },
+              },
+              {
+                default: n(() => [
+                  e("div", fs, [
+                    t(
+                      o,
+                      {
+                        to: "/admin/dashboard",
+                        class: "drawer-item",
+                        onClick: s[1] || (s[1] = (i) => (r.value = !1)),
+                      },
+                      {
+                        default: n(() => [
+                          t(a, null, { default: n(() => [t(l(b))]), _: 1 }),
+                          s[17] || (s[17] = e("span", null, "首页", -1)),
+                        ]),
+                        _: 1,
+                      },
+                    ),
+                    t(
+                      o,
+                      {
+                        to: "/admin/game-features",
+                        class: "drawer-item",
+                        onClick: s[2] || (s[2] = (i) => (r.value = !1)),
+                      },
+                      {
+                        default: n(() => [
+                          t(a, null, { default: n(() => [t(l($))]), _: 1 }),
+                          s[18] || (s[18] = e("span", null, "游戏功能", -1)),
+                        ]),
+                        _: 1,
+                      },
+                    ),
+                    t(
+                      o,
+                      {
+                        to: "/tokens",
+                        class: "drawer-item",
+                        onClick: s[3] || (s[3] = (i) => (r.value = !1)),
+                      },
+                      {
+                        default: n(() => [
+                          t(a, null, { default: n(() => [t(l(y))]), _: 1 }),
+                          s[19] || (s[19] = e("span", null, "Token管理", -1)),
+                        ]),
+                        _: 1,
+                      },
+                    ),
+                    t(
+                      o,
+                      {
+                        to: "/admin/daily-tasks",
+                        class: "drawer-item",
+                        onClick: s[4] || (s[4] = (i) => (r.value = !1)),
+                      },
+                      {
+                        default: n(() => [
+                          t(a, null, { default: n(() => [t(l(T))]), _: 1 }),
+                          s[20] || (s[20] = e("span", null, "任务管理", -1)),
+                        ]),
+                        _: 1,
+                      },
+                    ),
+                    t(
+                      o,
+                      {
+                        to: "/admin/batch-daily-tasks",
+                        class: "drawer-item",
+                        onClick: s[5] || (s[5] = (i) => (r.value = !1)),
+                      },
+                      {
+                        default: n(() => [
+                          t(a, null, { default: n(() => [t(l(L))]), _: 1 }),
+                          s[21] || (s[21] = e("span", null, "批量日常", -1)),
+                        ]),
+                        _: 1,
+                      },
+                    ),
+                    t(
+                      o,
+                      {
+                        to: "/admin/message-test",
+                        class: "drawer-item",
+                        onClick: s[6] || (s[6] = (i) => (r.value = !1)),
+                      },
+                      {
+                        default: n(() => [
+                          t(a, null, { default: n(() => [t(l(M))]), _: 1 }),
+                          s[22] || (s[22] = e("span", null, "消息测试", -1)),
+                        ]),
+                        _: 1,
+                      },
+                    ),
+                    l(C)()
+                      ? (d(),
+                        k(
+                          o,
+                          {
+                            key: 0,
+                            to: "/admin/legion-war",
+                            class: "nav-item",
+                            "active-class": "active",
+                          },
+                          {
+                            default: n(() => [
+                              t(a, null, { default: n(() => [t(l(z))]), _: 1 }),
+                              s[23] ||
+                                (s[23] = e("span", null, "实时盐场", -1)),
+                            ]),
+                            _: 1,
+                          },
+                        ))
+                      : g("", !0),
+                    t(
+                      o,
+                      {
+                        to: "/admin/profile",
+                        class: "drawer-item",
+                        onClick: s[7] || (s[7] = (i) => (r.value = !1)),
+                      },
+                      {
+                        default: n(() => [
+                          t(a, null, { default: n(() => [t(l(T))]), _: 1 }),
+                          s[24] || (s[24] = e("span", null, "个人设置", -1)),
+                        ]),
+                        _: 1,
+                      },
+                    ),
+                  ]),
+                ]),
+                _: 1,
+              },
+              8,
+              ["show"],
+            ),
+            e("div", ps, [t(V)]),
+          ])
+        );
+      };
+    },
+  },
+  Ts = Z(cs, [["__scopeId", "data-v-66290297"]]);
+export { Ts as default };
