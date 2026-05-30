@@ -547,6 +547,7 @@ const calculateDailyProgress = (status) => {
 <style scoped>
 .token-card {
   user-select: none;
+  min-width: 0;
 }
 
 .token-card:hover {
@@ -562,14 +563,16 @@ const calculateDailyProgress = (status) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  gap: 4px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .token-name {
@@ -589,13 +592,15 @@ const calculateDailyProgress = (status) => {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .group-tags {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   flex-wrap: wrap;
+  max-width: 100px;
 }
 
 .group-tag {
@@ -623,11 +628,12 @@ const calculateDailyProgress = (status) => {
 
 .info-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   margin-bottom: 8px;
-  font-size: 12px;
+  font-size: 11px;
   color: #86909c;
+  flex-wrap: wrap;
 }
 
 .status-section {
@@ -637,30 +643,31 @@ const calculateDailyProgress = (status) => {
 .section-label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: 11px;
   color: #4e5969;
 }
 
 .label-icon {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .time-remaining {
   margin-left: auto;
   color: #86909c;
+  font-size: 11px;
 }
 
 .progress-text {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 10px;
   color: #86909c;
 }
 
 .quick-actions {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   margin-top: 8px;
   margin-bottom: 8px;
   flex-wrap: wrap;
@@ -670,11 +677,12 @@ const calculateDailyProgress = (status) => {
   flex: 1;
   min-width: 0;
   font-size: 11px;
+  padding: 0 4px;
 }
 
 .expand-controls {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   flex-wrap: wrap;
   margin-bottom: 8px;
   padding-top: 8px;
@@ -682,13 +690,14 @@ const calculateDailyProgress = (status) => {
 }
 
 .expand-btn {
-  font-size: 11px;
+  font-size: 10px;
+  padding: 0 4px;
 }
 
 .expanded-section {
   background: #f7f8fa;
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   margin-bottom: 8px;
 }
 
@@ -697,7 +706,7 @@ const calculateDailyProgress = (status) => {
   justify-content: space-between;
   align-items: center;
   padding: 2px 0;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .detail-label {
@@ -717,6 +726,101 @@ const calculateDailyProgress = (status) => {
 }
 
 .connect-btn {
-  font-size: 12px;
+  font-size: 11px;
+}
+
+/* =====================
+   响应式适配
+   ===================== */
+
+/* 小屏幕优化 */
+@media (max-width: 576px) {
+  .token-card {
+    padding: 8px;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .header-left {
+    gap: 4px;
+    width: 100%;
+  }
+
+  .token-name {
+    font-size: 13px;
+    max-width: 80px;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .group-tags {
+    max-width: 80px;
+  }
+
+  .info-row {
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .section-label {
+    font-size: 10px;
+  }
+
+  .quick-actions {
+    gap: 2px;
+  }
+
+  .action-btn {
+    font-size: 10px;
+    padding: 0 2px;
+    min-width: 0;
+  }
+
+  .expand-controls {
+    gap: 2px;
+  }
+
+  .expand-btn {
+    font-size: 9px;
+    padding: 0 2px;
+  }
+
+  .expanded-section {
+    padding: 4px 8px;
+  }
+
+  .detail-row {
+    font-size: 10px;
+  }
+
+  .connect-btn {
+    font-size: 10px;
+  }
+}
+
+/* 超小屏幕 */
+@media (max-width: 360px) {
+  .token-card {
+    padding: 6px;
+  }
+
+  .token-name {
+    max-width: 60px;
+    font-size: 12px;
+  }
+
+  .action-btn {
+    font-size: 9px;
+  }
+
+  .expand-btn {
+    font-size: 8px;
+  }
 }
 </style>

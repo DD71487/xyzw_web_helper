@@ -1,5 +1,19 @@
 import { gameLogger } from "@/utils/logger";
 import type { EVM, XyzwSession } from ".";
+import { useTokenStore } from "../tokenStore";
+
+// 从怪异塔信息中提取数据
+const extractWeirdTowerData = (body: any) => {
+  if (!body) return null;
+  return {
+    floor: `${body.id || 1}-${body.layer || 1}`,
+    energy: body.energy || 0,
+    maxEnergy: body.maxEnergy || 10,
+    lotteryLeftCnt: body.lotteryLeftCnt || 0,
+    isExpanded: false,
+    isRefreshing: false,
+  };
+};
 
 export const TowerPlugin = ({
   onSome,
@@ -23,7 +37,7 @@ export const TowerPlugin = ({
     ["evotowerinforesp", "evotower_getinforesp", "evotower_getinfo"],
     (data: XyzwSession) => {
       gameLogger.verbose(`收到怪异塔信息事件: ${data.tokenId}`, data);
-      const { body } = data;
+      const { body, tokenId } = data;
       gameLogger.debug("怪异塔body:", body);
       if (!body) {
         gameLogger.debug("怪异塔响应为空");
@@ -32,6 +46,14 @@ export const TowerPlugin = ({
 
       data.gameData.value.evoTowerInfo = body;
       data.gameData.value.lastUpdated = new Date().toISOString();
+
+      // 更新 TokenCard 怪异塔数据
+      const weirdTowerData = extractWeirdTowerData(body);
+      if (weirdTowerData) {
+        const tokenStore = useTokenStore();
+        tokenStore.updateTokenGameData(tokenId, "weirdTowerData", weirdTowerData);
+        gameLogger.verbose(`已更新Token ${tokenId} 的怪异塔数据`);
+      }
     },
   );
 
@@ -101,7 +123,7 @@ export const TowerPlugin = ({
       towerId,
       timestamp: Date.now(),
     };
-    gameData.value.lastUpdated = new Date().toISOString();
+    data.gameData.value.lastUpdated = new Date().toISOString();
 
     // 检查是否需要自动领取奖励
     if (!isSuccess && towerId == undefined) {
@@ -119,8 +141,8 @@ export const TowerPlugin = ({
 
         if (towerRewards && !towerRewards[rewardFloor]) {
           // 保存奖励信息
-          gameData.value.towerResult.autoReward = true;
-          gameData.value.towerResult.rewardFloor = rewardFloor;
+          data.gameData.value.towerResult.autoReward = true;
+          data.gameData.value.towerResult.rewardFloor = rewardFloor;
           try {
             client?.send("tower_claimreward", { rewardId: rewardFloor });
           } catch (error) {

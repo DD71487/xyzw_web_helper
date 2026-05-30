@@ -6009,35 +6009,336 @@ const handleToggleConnection = (tokenId) => {
   }
 };
 
-const handleTokenQuickAction = (tokenId, action) => {
-  // 临时只选中该token执行操作
-  const previousSelection = [...selectedTokens.value];
-  selectedTokens.value = [tokenId];
+const handleTokenQuickAction = async (tokenId, action) => {
+  const token = tokens.value.find((t) => t.id === tokenId);
+  if (!token) return;
 
-  switch (action) {
-    case "tower":
-      // 闯关操作
-      addLog({
-        time: new Date().toLocaleTimeString(),
-        message: `账号 ${tokens.value.find((t) => t.id === tokenId)?.name} 执行闯关`,
-        type: "info",
-      });
-      break;
-    case "climbTower":
-      climbTower();
-      break;
-    case "weirdTower":
-      climbWeirdTower();
-      break;
-    case "car":
-      batchSmartSendCar();
-      break;
+  // 检查连接状态
+  const status = tokenStore.getWebSocketStatus(tokenId);
+  if (status !== "connected") {
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `账号 ${token.name} 未连接，请先连接`,
+      type: "warning",
+    });
+    return;
   }
 
-  // 恢复之前的选择（延迟恢复，让任务先执行）
-  setTimeout(() => {
-    selectedTokens.value = previousSelection;
-  }, 100);
+  // 设置运行状态
+  tokenStore.setTokenRunning(tokenId, true, action);
+
+  try {
+    switch (action) {
+      case "tower":
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `=== 开始闯关: ${token.name} ===`,
+          type: "info",
+        });
+        await executeSingleTower(tokenId);
+        break;
+      case "climbTower":
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `=== 开始爬塔: ${token.name} ===`,
+          type: "info",
+        });
+        await executeSingleClimbTower(tokenId);
+        break;
+      case "weirdTower":
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `=== 开始爬怪异塔: ${token.name} ===`,
+          type: "info",
+        });
+        await executeSingleWeirdTower(tokenId);
+        break;
+      case "car":
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `=== 开始智能发车: ${token.name} ===`,
+          type: "info",
+        });
+        await executeSingleCarSend(tokenId);
+        break;
+    }
+  } catch (err) {
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `账号 ${token.name} ${action} 执行失败: ${err.message || err}`,
+      type: "error",
+    });
+  } finally {
+    tokenStore.setTokenRunning(tokenId, false);
+    // 刷新角色信息以更新卡片数据
+    setTimeout(() => {
+      tokenStore.sendGetRoleInfo(tokenId).catch(() => {});
+    }, 1000);
+  }
+};
+
+// ======================
+// 单账号闯关逻辑
+// ======================
+const executeSingleTower = async (tokenId) => {
+  const token = tokens.value.find((t) => t.id === tokenId);
+  const tokenSettings = loadSettings ? (loadSettings(tokenId) || currentSettings) : currentSettings;
+
+  try {
+    await ensureConnection(tokenId);
+
+    // 获取阵容信息并切换
+    const teamInfo = await tokenStore.sendMessageWithPromise(
+      tokenId, "presetteam_getinfo", {}, 5000,
+    );
+    const currentFormation = teamInfo?.presetTeamInfo?.useTeamId;
+    if (currentFormation !== tokenSettings.towerFormation) {
+      await tokenStore.sendMessageWithPromise(
+        tokenId, "presetteam_saveteam", { teamId: tokenSettings.towerFormation }, 5000,
+      );
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${token.name} 切换到阵容${tokenSettings.towerFormation}`,
+        type: "info",
+      });
+    }
+
+    // 获取初始体力
+    let roleInfo = await tokenStore.sendGetRoleInfo(tokenId);
+    let energy = roleInfo?.role?.tower?.energy || 0;
+
+    if (energy <= 0) {
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${token.name} 体力不足，无法闯关`,
+        type: "warning",
+      });
+      return;
+    }
+
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `${token.name} 初始体力: ${energy}，开始闯关...`,
+      type: "info",
+    });
+
+    // 执行闯关（最多10次，避免卡死）
+    let count = 0;
+    const MAX_COUNT = 10;
+    while (energy > 0 && count < MAX_COUNT) {
+      try {
+        await tokenStore.sendMessageWithPromise(tokenId, "fight_starttower", {}, 5000);
+        count++;
+        energy--;
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${token.name} 闯关第 ${count} 次成功`,
+          type: "info",
+        });
+        await new Promise((r) => setTimeout(r, 800));
+      } catch (err) {
+        if (err.message?.includes("1500040")) {
+          // 奖励未领取
+          const towerId = roleInfo?.role?.tower?.id;
+          if (towerId) {
+            const rewardFloor = Math.floor(towerId / 10);
+            tokenStore.sendMessage(tokenId, "tower_claimreward", { rewardId: rewardFloor });
+            addLog({
+              time: new Date().toLocaleTimeString(),
+              message: `${token.name} 自动领取第${rewardFloor}层奖励`,
+              type: "info",
+            });
+          }
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
+        }
+        if (err.message?.includes("200400")) {
+          await new Promise((r) => setTimeout(r, 3000));
+          continue;
+        }
+        break;
+      }
+    }
+
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `${token.name} 闯关完成，共执行 ${count} 次`,
+      type: "success",
+    });
+  } catch (err) {
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `${token.name} 闯关失败: ${err.message || err}`,
+      type: "error",
+    });
+  }
+};
+
+// ======================
+// 单账号爬塔逻辑
+// ======================
+const executeSingleClimbTower = async (tokenId) => {
+  const token = tokens.value.find((t) => t.id === tokenId);
+  const tokenSettings = loadSettings ? (loadSettings(tokenId) || currentSettings) : currentSettings;
+
+  try {
+    await ensureConnection(tokenId);
+
+    // 获取阵容信息并切换
+    const teamInfo = await tokenStore.sendMessageWithPromise(
+      tokenId, "presetteam_getinfo", {}, 5000,
+    );
+    const currentFormation = teamInfo?.presetTeamInfo?.useTeamId;
+    if (currentFormation !== tokenSettings.towerFormation) {
+      await tokenStore.sendMessageWithPromise(
+        tokenId, "presetteam_saveteam", { teamId: tokenSettings.towerFormation }, 5000,
+      );
+    }
+
+    let roleInfo = await tokenStore.sendGetRoleInfo(tokenId);
+    let energy = roleInfo?.role?.tower?.energy || 0;
+
+    if (energy <= 0) {
+      addLog({ time: new Date().toLocaleTimeString(), message: `${token.name} 体力不足`, type: "warning" });
+      return;
+    }
+
+    let count = 0;
+    const MAX_CLIMB = 50;
+    while (energy > 0 && count < MAX_CLIMB) {
+      try {
+        await tokenStore.sendMessageWithPromise(tokenId, "fight_starttower", {}, 5000);
+        count++;
+        energy--;
+        if (count % 5 === 0) {
+          roleInfo = await tokenStore.sendGetRoleInfo(tokenId);
+          energy = roleInfo?.role?.tower?.energy || 0;
+        }
+        await new Promise((r) => setTimeout(r, 600));
+      } catch (err) {
+        if (err.message?.includes("1500040")) {
+          const towerId = roleInfo?.role?.tower?.id;
+          if (towerId) {
+            tokenStore.sendMessage(tokenId, "tower_claimreward", { rewardId: Math.floor(towerId / 10) });
+          }
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
+        }
+        if (err.message?.includes("200400")) {
+          await new Promise((r) => setTimeout(r, 3000));
+          continue;
+        }
+        break;
+      }
+    }
+
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `${token.name} 爬塔完成，共 ${count} 次`,
+      type: "success",
+    });
+  } catch (err) {
+    addLog({ time: new Date().toLocaleTimeString(), message: `${token.name} 爬塔失败: ${err.message || err}`, type: "error" });
+  }
+};
+
+// ======================
+// 单账号爬怪异塔逻辑
+// ======================
+const executeSingleWeirdTower = async (tokenId) => {
+  const token = tokens.value.find((t) => t.id === tokenId);
+
+  try {
+    await ensureConnection(tokenId);
+
+    let roleInfo = await tokenStore.sendGetRoleInfo(tokenId);
+    let energy = roleInfo?.role?.evoTower?.energy || 0;
+
+    if (energy <= 0) {
+      addLog({ time: new Date().toLocaleTimeString(), message: `${token.name} 怪异塔体力不足`, type: "warning" });
+      return;
+    }
+
+    let count = 0;
+    const MAX_CLIMB = 30;
+    while (energy > 0 && count < MAX_CLIMB) {
+      try {
+        await tokenStore.sendMessageWithPromise(tokenId, "fight_startevotower", {}, 5000);
+        count++;
+        energy--;
+        if (count % 5 === 0) {
+          roleInfo = await tokenStore.sendGetRoleInfo(tokenId);
+          energy = roleInfo?.role?.evoTower?.energy || 0;
+        }
+        await new Promise((r) => setTimeout(r, 600));
+      } catch (err) {
+        if (err.message?.includes("200400")) {
+          await new Promise((r) => setTimeout(r, 3000));
+          continue;
+        }
+        break;
+      }
+    }
+
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `${token.name} 怪异塔完成，共 ${count} 次`,
+      type: "success",
+    });
+  } catch (err) {
+    addLog({ time: new Date().toLocaleTimeString(), message: `${token.name} 怪异塔失败: ${err.message || err}`, type: "error" });
+  }
+};
+
+// ======================
+// 单账号智能发车逻辑
+// ======================
+const executeSingleCarSend = async (tokenId) => {
+  const token = tokens.value.find((t) => t.id === tokenId);
+
+  try {
+    await ensureConnection(tokenId);
+
+    // 获取车辆信息
+    const carInfo = await tokenStore.sendMessageWithPromise(
+      tokenId, "car_getinfo", {}, 5000,
+    );
+
+    if (!carInfo || !carInfo.cars) {
+      addLog({ time: new Date().toLocaleTimeString(), message: `${token.name} 获取车辆信息失败`, type: "warning" });
+      return;
+    }
+
+    const cars = carInfo.cars;
+    const availableCars = cars.filter((c) => c.status === "available");
+
+    if (availableCars.length === 0) {
+      addLog({ time: new Date().toLocaleTimeString(), message: `${token.name} 没有可用车辆`, type: "info" });
+      return;
+    }
+
+    // 发送可用车辆
+    let sentCount = 0;
+    for (const car of availableCars.slice(0, 5)) {
+      try {
+        await tokenStore.sendMessageWithPromise(
+          tokenId, "car_send", { carId: car.id }, 5000,
+        );
+        sentCount++;
+        await new Promise((r) => setTimeout(r, 500));
+      } catch (err) {
+        // 忽略单个车辆发送失败
+      }
+    }
+
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `${token.name} 智能发车完成，发送 ${sentCount}/${availableCars.length} 辆`,
+      type: "success",
+    });
+  } catch (err) {
+    addLog({ time: new Date().toLocaleTimeString(), message: `${token.name} 智能发车失败: ${err.message || err}`, type: "error" });
+  }
 };
 
 // 拖拽处理
