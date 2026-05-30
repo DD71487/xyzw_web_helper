@@ -12,7 +12,9 @@
         </n-button>
         <n-button size="small" type="warning" @click="exportTokens">
           <template #icon>
-            <i class="i-mdi:download"></i>
+            <n-icon>
+              <Download />
+            </n-icon>
           </template>
           <span class="btn-text">导出</span>
         </n-button>
@@ -26,6 +28,14 @@
             <span class="btn-text">导入</span>
           </n-button>
         </n-upload>
+        <n-button size="small" type="primary" @click="showAddTokenModal = true">
+          <template #icon>
+            <n-icon>
+              <Add />
+            </n-icon>
+          </template>
+          <span class="btn-text">添加Token</span>
+        </n-button>
       </div>
     </template>
     <template #default>
@@ -35,9 +45,7 @@
         <div v-if="localTokenStore.userToken" class="token-item">
           <div class="token-info">
             <span class="token-label">Token:</span>
-            <span class="token-value">{{
-              maskToken(localTokenStore.userToken)
-            }}</span>
+            <span class="token-value">{{ maskToken(localTokenStore.userToken) }}</span>
           </div>
           <n-button size="tiny" type="error" @click="clearUserToken">
             清除
@@ -47,39 +55,39 @@
           <span>未设置用户Token</span>
         </div>
       </div>
+
       <!-- 游戏Token列表 -->
       <div class="token-section">
         <h4>
-          游戏角色Token ({{ Object.keys(localTokenStore.gameTokens).length }}个)
+          游戏角色Token ({{ tokenStore.gameTokens.length }}个)
         </h4>
+        <div v-if="tokenStore.gameTokens.length === 0" class="empty-token">
+          <span>暂无游戏Token，请点击"添加Token"导入</span>
+        </div>
         <div class="game-tokens-list">
           <div
-            v-for="(tokenData, roleId) in localTokenStore.gameTokens"
-            :key="roleId"
+            v-for="tokenData in tokenStore.gameTokens"
+            :key="tokenData.id"
             class="game-token-item"
           >
             <div class="token-header">
               <div class="role-info">
-                <span class="role-name">{{ tokenData.roleName }}</span>
+                <span class="role-name">{{ tokenData.name }}</span>
                 <span class="role-server">{{ tokenData.server }}</span>
               </div>
               <div class="token-actions">
                 <n-button
                   size="tiny"
-                  :type="
-                    getWSStatus(roleId) === 'connected' ? 'success' : 'default'
-                  "
-                  @click="toggleWebSocket(roleId, tokenData)"
+                  :type="getWSStatus(tokenData.id) === 'connected' ? 'success' : 'default'"
+                  @click="toggleWebSocket(tokenData.id, tokenData)"
                 >
-                  {{
-                    getWSStatus(roleId) === "connected" ? "断开WS" : "连接WS"
-                  }}
+                  {{ getWSStatus(tokenData.id) === 'connected' ? '断开WS' : '连接WS' }}
                 </n-button>
 
                 <n-dropdown
                   :options="getTokenMenuOptions(tokenData)"
                   trigger="click"
-                  @select="handleTokenAction($event, roleId, tokenData)"
+                  @select="handleTokenAction($event, tokenData.id, tokenData)"
                 >
                   <n-button size="tiny" type="tertiary">
                     <template #icon>
@@ -95,33 +103,27 @@
             <div class="token-details">
               <div class="detail-item">
                 <span class="detail-label">Token:</span>
-                <span class="detail-value">{{
-                  maskToken(tokenData.token)
-                }}</span>
+                <span class="detail-value">{{ maskToken(tokenData.token) }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">WebSocket URL:</span>
-                <span class="detail-value">{{ tokenData.wsUrl }}</span>
+                <span class="detail-value">{{ tokenData.wsUrl || '默认' }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">创建时间:</span>
-                <span class="detail-value">{{
-                  formatTime(tokenData.createdAt)
-                }}</span>
+                <span class="detail-value">{{ formatTime(tokenData.createdAt) }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">最后使用:</span>
-                <span class="detail-value">{{
-                  formatTime(tokenData.lastUsed)
-                }}</span>
+                <span class="detail-value">{{ formatTime(tokenData.lastUsed) }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">连接状态:</span>
                 <n-tag
                   size="small"
-                  :type="getWSStatusType(getWSStatus(roleId))"
+                  :type="getWSStatusType(getWSStatus(tokenData.id))"
                 >
-                  {{ getWSStatusText(getWSStatus(roleId)) }}
+                  {{ getWSStatusText(getWSStatus(tokenData.id)) }}
                 </n-tag>
               </div>
             </div>
@@ -137,14 +139,42 @@
       <n-button type="error" @click="clearAllTokens"> 清除所有Token </n-button>
     </template>
   </a-card>
+
+  <!-- 添加Token模态框 -->
+  <n-modal
+    v-model:show="showAddTokenModal"
+    title="添加Token"
+    preset="card"
+    :style="{ width: '600px', maxWidth: '90vw' }"
+    :mask-closable="false"
+  >
+    <n-tabs type="line" animated v-model:value="activeImportTab">
+      <n-tab-pane name="manual" tab="手动输入">
+        <ManualImport @cancel="showAddTokenModal = false" @ok="handleImportOk" />
+      </n-tab-pane>
+      <n-tab-pane name="url" tab="URL获取">
+        <UrlImport @cancel="showAddTokenModal = false" @ok="handleImportOk" />
+      </n-tab-pane>
+      <n-tab-pane name="wxQrcode" tab="微信扫码">
+        <WxQrcodeImport @cancel="showAddTokenModal = false" @ok="handleImportOk" />
+      </n-tab-pane>
+      <n-tab-pane name="bin" tab="BIN多角色">
+        <BinImport @cancel="showAddTokenModal = false" @ok="handleImportOk" />
+      </n-tab-pane>
+      <n-tab-pane name="singleBin" tab="BIN单角色">
+        <SingleBinImport @cancel="showAddTokenModal = false" @ok="handleImportOk" />
+      </n-tab-pane>
+    </n-tabs>
+  </n-modal>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, h } from "vue";
 import { useMessage, useDialog, NIcon } from "naive-ui";
-import { gameTokens } from "@/stores/tokenStore";
+import { useTokenStore } from "@/stores/tokenStore";
 import { useLocalTokenStore } from "@/stores/localTokenManager";
 import { useGameRolesStore } from "@/stores/gameRoles";
+import type { TokenData } from "@/stores/tokenStore";
 import {
   Refresh,
   Download,
@@ -154,30 +184,43 @@ import {
   TrashBin,
   SyncCircle,
   CopyOutline,
+  Add,
 } from "@vicons/ionicons5";
+
+// 导入子组件
+import ManualImport from "@/views/TokenImport/manual.vue";
+import UrlImport from "@/views/TokenImport/url.vue";
+import WxQrcodeImport from "@/views/TokenImport/wxqrcode.vue";
+import BinImport from "@/views/TokenImport/bin.vue";
+import SingleBinImport from "@/views/TokenImport/singlebin.vue";
 
 const message = useMessage();
 const dialog = useDialog();
+const tokenStore = useTokenStore();
 const localTokenStore = useLocalTokenStore();
 const gameRolesStore = useGameRolesStore();
 
+const showAddTokenModal = ref(false);
+const activeImportTab = ref("manual");
+
 // 方法
-const maskToken = (token) => {
+const maskToken = (token: string) => {
   if (!token) return "";
   const len = token.length;
   if (len <= 8) return token;
   return token.substring(0, 8) + "***" + token.substring(len - 8);
 };
 
-const formatTime = (timestamp) => {
+const formatTime = (timestamp: string | undefined) => {
+  if (!timestamp) return "未知";
   return new Date(timestamp).toLocaleString("zh-CN");
 };
 
-const getWSStatus = (roleId) => {
-  return localTokenStore.getWebSocketStatus(roleId);
+const getWSStatus = (tokenId: string) => {
+  return tokenStore.getWebSocketStatus(tokenId);
 };
 
-const getWSStatusType = (status) => {
+const getWSStatusType = (status: string) => {
   switch (status) {
     case "connected":
       return "success";
@@ -190,7 +233,7 @@ const getWSStatusType = (status) => {
   }
 };
 
-const getWSStatusText = (status) => {
+const getWSStatusText = (status: string) => {
   switch (status) {
     case "connected":
       return "已连接";
@@ -204,7 +247,7 @@ const getWSStatusText = (status) => {
 };
 
 // 获取Token菜单选项
-const getTokenMenuOptions = (tokenData) => {
+const getTokenMenuOptions = (tokenData: TokenData) => {
   const options = [
     {
       label: "编辑",
@@ -235,7 +278,7 @@ const getTokenMenuOptions = (tokenData) => {
   }
 
   options.push(
-    { type: "divider" },
+    { type: "divider" as const },
     {
       label: "删除",
       key: "delete",
@@ -247,22 +290,22 @@ const getTokenMenuOptions = (tokenData) => {
 };
 
 // 处理Token菜单操作
-const handleTokenAction = (action, roleId, tokenData) => {
+const handleTokenAction = (action: string, tokenId: string, tokenData: TokenData) => {
   switch (action) {
     case "edit":
-      editToken(roleId, tokenData);
+      editToken(tokenId, tokenData);
       break;
     case "copy":
       copyToken(tokenData.token);
       break;
     case "refresh":
-      regenerateToken(roleId);
+      regenerateToken(tokenId);
       break;
     case "refresh-url":
-      refreshTokenFromUrl(roleId, tokenData);
+      refreshTokenFromUrl(tokenId, tokenData);
       break;
     case "delete":
-      removeToken(roleId);
+      removeToken(tokenId);
       break;
   }
 };
@@ -285,16 +328,16 @@ const clearUserToken = () => {
   });
 };
 
-const toggleWebSocket = (roleId, tokenData) => {
-  const status = getWSStatus(roleId);
+const toggleWebSocket = (tokenId: string, tokenData: TokenData) => {
+  const status = getWSStatus(tokenId);
 
   if (status === "connected") {
-    localTokenStore.closeWebSocketConnection(roleId);
+    tokenStore.closeWebSocketConnection(tokenId);
     message.info("WebSocket连接已断开");
   } else {
     try {
-      localTokenStore.createWebSocketConnection(
-        roleId,
+      tokenStore.createWebSocketConnection(
+        tokenId,
         tokenData.token,
         tokenData.wsUrl,
       );
@@ -305,8 +348,8 @@ const toggleWebSocket = (roleId, tokenData) => {
   }
 };
 
-const regenerateToken = (roleId) => {
-  const oldTokenData = localTokenStore.getGameToken(roleId);
+const regenerateToken = (tokenId: string) => {
+  const oldTokenData = tokenStore.gameTokens.find((t) => t.id === tokenId);
   if (!oldTokenData) {
     message.error("找不到对应的Token数据");
     return;
@@ -354,7 +397,7 @@ const regenerateToken = (roleId) => {
               },
               mode: "cors",
             });
-          } catch (corsError) {
+          } catch (corsError: any) {
             throw new Error(
               `跨域请求被阻止。请确保目标服务器支持CORS。错误详情: ${corsError.message}`,
             );
@@ -374,19 +417,17 @@ const regenerateToken = (roleId) => {
         }
 
         // 更新token
-        localTokenStore.updateGameToken(roleId, {
+        tokenStore.updateToken(tokenId, {
           token: data.token,
           server: data.server || oldTokenData.server,
-          regeneratedAt: new Date().toISOString(),
-          lastRefreshed: new Date().toISOString(),
         });
 
         // 如果当前token有连接，需要重新连接
-        if (localTokenStore.getWebSocketStatus(roleId) === "connected") {
-          localTokenStore.closeWebSocketConnection(roleId);
+        if (tokenStore.getWebSocketStatus(tokenId) === "connected") {
+          tokenStore.closeWebSocketConnection(tokenId);
           setTimeout(() => {
-            localTokenStore.createWebSocketConnection(
-              roleId,
+            tokenStore.createWebSocketConnection(
+              tokenId,
               data.token,
               oldTokenData.wsUrl,
             );
@@ -395,7 +436,7 @@ const regenerateToken = (roleId) => {
 
         loadingMsg.destroy();
         message.success("Token已成功重新获取");
-      } catch (error) {
+      } catch (error: any) {
         console.error("重新获取Token失败:", error);
         message.error(error.message || "Token重新获取失败");
       }
@@ -403,26 +444,26 @@ const regenerateToken = (roleId) => {
   });
 };
 
-const removeToken = (roleId) => {
+const removeToken = (tokenId: string) => {
   dialog.warning({
     title: "删除Token",
     content: "确定要删除此角色的游戏Token吗？这将断开相关的WebSocket连接。",
     positiveText: "确定删除",
     negativeText: "取消",
-    onPositiveClick: () => {
-      localTokenStore.removeGameToken(roleId);
+    onPositiveClick: async () => {
+      await tokenStore.removeToken(tokenId);
       message.success("Token已删除");
     },
   });
 };
 
 // 编辑Token（暂时显示提示信息，后续可以实现编辑功能）
-const editToken = (roleId, tokenData) => {
+const editToken = (tokenId: string, tokenData: TokenData) => {
   message.info("编辑功能正在开发中");
 };
 
 // 复制Token到剪贴板
-const copyToken = async (token) => {
+const copyToken = async (token: string) => {
   try {
     await navigator.clipboard.writeText(token);
     message.success("Token已复制到剪贴板");
@@ -439,7 +480,7 @@ const copyToken = async (token) => {
 };
 
 // 从URL刷新Token
-const refreshTokenFromUrl = async (roleId, tokenData) => {
+const refreshTokenFromUrl = async (tokenId: string, tokenData: TokenData) => {
   if (!tokenData.sourceUrl) {
     message.warning("该Token没有配置源URL");
     return;
@@ -482,14 +523,14 @@ const refreshTokenFromUrl = async (roleId, tokenData) => {
         }
 
         // 更新Token
-        localTokenStore.updateGameToken(roleId, {
+        tokenStore.updateToken(tokenId, {
           token: data.token,
           lastUsed: new Date().toISOString(),
         });
 
         loadingMsg.destroy();
         message.success("Token刷新成功");
-      } catch (error) {
+      } catch (error: any) {
         console.error("URL刷新Token失败:", error);
         message.error("刷新失败: " + error.message);
       }
@@ -499,7 +540,7 @@ const refreshTokenFromUrl = async (roleId, tokenData) => {
 
 const exportTokens = () => {
   try {
-    const tokenData = localTokenStore.exportTokens();
+    const tokenData = tokenStore.exportTokens();
     const dataStr = JSON.stringify(tokenData, null, 2);
     const dataBlob = new Blob([dataStr], { type: "application/json" });
 
@@ -509,17 +550,17 @@ const exportTokens = () => {
     link.click();
 
     message.success("Token数据已导出");
-  } catch (error) {
+  } catch (error: any) {
     message.error("导出失败: " + error.message);
   }
 };
 
-const importTokens = ({ file }) => {
+const importTokens = ({ file }: any) => {
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
-      const tokenData = JSON.parse(e.target.result);
-      const result = localTokenStore.importTokens(tokenData);
+      const tokenData = JSON.parse(e.target?.result as string);
+      const result = tokenStore.importTokens(tokenData);
 
       if (result.success) {
         message.success(result.message);
@@ -541,8 +582,8 @@ const cleanExpiredTokens = () => {
     content: "确定要清理超过24小时未使用的Token吗？",
     positiveText: "确定",
     negativeText: "取消",
-    onPositiveClick: () => {
-      const cleanedCount = localTokenStore.cleanExpiredTokens();
+    onPositiveClick: async () => {
+      const cleanedCount = await tokenStore.cleanExpiredTokens();
       message.success(`已清理 ${cleanedCount} 个过期Token`);
     },
   });
@@ -555,11 +596,16 @@ const clearAllTokens = () => {
       "确定要清除所有游戏Token吗？这将断开所有WebSocket连接。此操作不可恢复！",
     positiveText: "确定清除",
     negativeText: "取消",
-    onPositiveClick: () => {
-      localTokenStore.clearAllGameTokens();
+    onPositiveClick: async () => {
+      await tokenStore.clearAllTokens();
       message.success("所有游戏Token已清除");
     },
   });
+};
+
+const handleImportOk = () => {
+  showAddTokenModal.value = false;
+  message.success("Token导入成功");
 };
 </script>
 
@@ -637,12 +683,6 @@ const clearAllTokens = () => {
   border-radius: var(--border-radius-medium);
 }
 
-.game-tokens-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
 .game-token-item {
   border: 1px solid var(--border-light);
   border-radius: var(--border-radius-medium);
@@ -707,12 +747,6 @@ const clearAllTokens = () => {
   justify-content: center;
   padding-top: var(--spacing-lg);
   border-top: 1px solid var(--border-light);
-}
-
-.header-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
 }
 
 @media (max-width: 768px) {

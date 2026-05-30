@@ -70,6 +70,7 @@
               background-color: #f8f9fa;
               border-radius: 8px;
               border: 1px solid #e9ecef;
+              flex-wrap: wrap;
             "
           >
             <n-button
@@ -89,6 +90,22 @@
               停止
             </n-button>
             <n-button
+              @click="connectSelectedTokens"
+              :disabled="isRunning || selectedTokens.length === 0"
+              type="success"
+              size="medium"
+            >
+              连接
+            </n-button>
+            <n-button
+              @click="disconnectSelectedTokens"
+              :disabled="isRunning || selectedTokens.length === 0"
+              type="warning"
+              size="medium"
+            >
+              断开
+            </n-button>
+            <n-button
               @click="openTemplateManagerModal"
               type="info"
               size="medium"
@@ -103,11 +120,49 @@
               </template>
               设置
             </n-button>
+            <n-switch v-model:value="wakeLockEnabled" @update:value="toggleWakeLock">
+              <template #checked> 防休眠开 </template>
+              <template #unchecked> 防休眠关 </template>
+            </n-switch>
+            <n-button
+              @click="refreshAllTokens"
+              :disabled="isRunning || selectedTokens.length === 0"
+              size="small"
+            >
+              刷新Token
+            </n-button>
+            <n-button
+              @click="resetCache"
+              type="error"
+              size="small"
+            >
+              重置缓存
+            </n-button>
           </div>
         </div>
 
         <!-- Token Selection -->
         <n-card title="账号列表" class="token-list-card">
+          <!-- 搜索和展开/收起控制 -->
+          <div style="margin-bottom: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <n-input
+              v-model:value="searchKeyword"
+              placeholder="搜索账号名称或服务器"
+              size="small"
+              style="width: 200px"
+              clearable
+            />
+            <n-button
+              size="small"
+              @click="expandAll = !expandAll"
+            >
+              {{ expandAll ? "全部收起" : "全部展开" }}
+            </n-button>
+            <n-tag size="small" type="info">
+              共 {{ tokens.length }} 个账号，选中 {{ selectedTokens.length }} 个
+            </n-tag>
+          </div>
+
           <div style="margin-bottom: 16px">
             <!-- 分组管理和选择 -->
             <n-space vertical style="width: 100%">
@@ -236,7 +291,7 @@
                 :y-gap="8"
                 :cols="batchSettings.tokenListColumns"
               >
-                <n-grid-item v-for="token in sortedTokens" :key="token.id">
+                <n-grid-item v-for="token in (searchKeyword ? filteredTokens : sortedTokens)" :key="token.id">
                   <div class="token-row">
                     <n-checkbox
                       :value="token.id"
@@ -252,9 +307,18 @@
                         >
                           {{ getStatusText(token.id) }}
                         </n-tag>
+                        <!-- 连接状态 -->
+                        <n-tag
+                          v-if="connectionStatus[token.id]"
+                          size="small"
+                          :type="connectionStatus[token.id] === 'connected' ? 'success' : connectionStatus[token.id] === 'connecting' ? 'warning' : 'error'"
+                          style="margin-left: 4px"
+                        >
+                          {{ connectionStatus[token.id] === 'connected' ? '已连接' : connectionStatus[token.id] === 'connecting' ? '连接中' : '断开' }}
+                        </n-tag>
                         <!-- 显示token所属的分组 -->
                         <div
-                          v-if="tokenStore.getTokenGroups(token.id).length > 0"
+                          v-if="expandAll && tokenStore.getTokenGroups(token.id).length > 0"
                           style="
                             margin-left: 8px;
                             display: inline-flex;
@@ -289,6 +353,9 @@
                 </n-grid-item>
               </n-grid>
             </n-checkbox-group>
+            <div v-if="searchKeyword && filteredTokens.length === 0" style="text-align: center; color: #86909c; padding: 12px;">
+              未找到匹配的账号
+            </div>
           </n-space>
         </n-card>
 
@@ -639,6 +706,123 @@
                   :title="isWarGuessActivityOpen ? '' : warGuessActivityTip"
                 >
                   月赛助威
+                </n-button>
+              </n-space>
+            </n-tab-pane>
+            <n-tab-pane name="welfare" tab="福利">
+              <n-space>
+                <n-button
+                  size="small"
+                  @click="claimHangUpRewards"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  领取挂机奖励
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchAddHangUpTime"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  一键加钟
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchclubsign"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  俱乐部签到
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="collection_claimfreereward"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  珍宝阁免费奖励
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchClaimPeachTasks"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  蟠桃园任务
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchClaimStarRewards"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  图鉴星级奖励
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchClaimBoxPointReward"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  宝箱积分奖励
+                </n-button>
+              </n-space>
+            </n-tab-pane>
+            <n-tab-pane name="handbook" tab="图鉴">
+              <n-space>
+                <n-button
+                  size="small"
+                  @click="batchHeroUpgrade"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  英雄升星
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchBookUpgrade"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  图鉴升星
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchClaimStarRewards"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  领取图鉴奖励
+                </n-button>
+              </n-space>
+            </n-tab-pane>
+            <n-tab-pane name="shidian" tab="十殿">
+              <n-space>
+                <n-button
+                  size="small"
+                  @click="climbTower"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  咸将塔
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchbaoku13"
+                  :disabled="isRunning || selectedTokens.length === 0 || !isbaokuActivityOpen"
+                >
+                  宝库1-3层
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchbaoku45"
+                  :disabled="isRunning || selectedTokens.length === 0 || !isbaokuActivityOpen"
+                >
+                  宝库4-5层
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="climbWeirdTower"
+                  :disabled="isRunning || selectedTokens.length === 0 || !isWeirdTowerActivityOpen"
+                >
+                  怪异塔
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchGenieSweep"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  灯神扫荡
                 </n-button>
               </n-space>
             </n-tab-pane>
@@ -2877,15 +3061,20 @@ import {
 
 import { merchantConfig, goldItemsConfig } from "@/utils/dreamConstants";
 
+// Import new infrastructure modules
+import { storage } from "@/utils/storage";
+import { wakeLockManager } from "@/utils/wakeLock";
+import { crossPlatform } from "@/utils/crossPlatform";
+
 // Initialize token store, message service, and task runner
 const tokenStore = useTokenStore();
 const message = useMessage();
 
-// 排序配置（从localStorage读取，与TokenImport共享）
-const savedSortConfig = localStorage.getItem("tokenSortConfig");
+// 排序配置（从storage读取，与TokenImport共享）
+const savedSortConfig = storage.get("tokenSortConfig");
 const sortConfig = ref(
   savedSortConfig
-    ? JSON.parse(savedSortConfig)
+    ? (typeof savedSortConfig === "string" ? JSON.parse(savedSortConfig) : savedSortConfig)
     : {
         field: "createdAt", // 排序字段：name, server, createdAt, lastUsed
         direction: "asc", // 排序方向：asc, desc
@@ -2961,8 +3150,8 @@ const toggleSort = (field) => {
     sortConfig.value.direction = "asc";
   }
 
-  // 保存排序设置到localStorage
-  localStorage.setItem("tokenSortConfig", JSON.stringify(sortConfig.value));
+  // 保存排序设置到storage
+  storage.set("tokenSortConfig", sortConfig.value);
 };
 
 // 获取排序图标
@@ -3395,12 +3584,12 @@ const batchSettings = reactive({
   smartDepartureMatchAll: false,
 });
 
-// Load batch settings from localStorage
+// Load batch settings from storage
 const loadBatchSettings = () => {
   try {
-    const saved = localStorage.getItem("batchSettings");
+    const saved = storage.get("batchSettings");
     if (saved) {
-      const parsed = JSON.parse(saved);
+      const parsed = typeof saved === "string" ? JSON.parse(saved) : saved;
       Object.assign(batchSettings, parsed);
     }
   } catch (error) {
@@ -3408,10 +3597,10 @@ const loadBatchSettings = () => {
   }
 };
 
-// Save batch settings to localStorage
+// Save batch settings to storage
 const saveBatchSettings = () => {
   try {
-    localStorage.setItem("batchSettings", JSON.stringify(batchSettings));
+    storage.set("batchSettings", batchSettings);
     message.success("定时批量任务设置已保存");
     showBatchSettingsModal.value = false;
   } catch (error) {
@@ -3444,6 +3633,176 @@ const securityPassword = ref(""); // 安全密码
 // 头像加载状态
 const isAvatarLoading = ref(false);
 const avatarLoadError = ref(false);
+
+// ======================
+// Wake Lock (防休眠)
+// ======================
+const wakeLockEnabled = ref(false);
+const wakeLockStatus = ref("inactive");
+
+const toggleWakeLock = async () => {
+  if (wakeLockEnabled.value) {
+    const success = await wakeLockManager.request();
+    if (success) {
+      wakeLockStatus.value = "active";
+      message.success("防休眠已开启");
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: "=== 防休眠已开启 ===",
+        type: "info",
+      });
+    } else {
+      wakeLockEnabled.value = false;
+      wakeLockStatus.value = "inactive";
+      message.warning("防休眠开启失败，当前环境可能不支持");
+    }
+  } else {
+    await wakeLockManager.release();
+    wakeLockStatus.value = "inactive";
+    message.info("防休眠已关闭");
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: "=== 防休眠已关闭 ===",
+      type: "info",
+    });
+  }
+};
+
+// ======================
+// Connection Management
+// ======================
+const connectionStatus = ref({});
+
+const connectSelectedTokens = async () => {
+  if (selectedTokens.value.length === 0) {
+    message.warning("请先选择要连接的账号");
+    return;
+  }
+
+  for (const tokenId of selectedTokens.value) {
+    const token = tokens.value.find((t) => t.id === tokenId);
+    if (!token) continue;
+
+    connectionStatus.value[tokenId] = "connecting";
+    try {
+      tokenStore.createWebSocketConnection(tokenId, token.token, token.wsUrl);
+      const connected = await waitForConnection(tokenId);
+      connectionStatus.value[tokenId] = connected ? "connected" : "failed";
+      if (connected) {
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${token.name} 连接成功`,
+          type: "success",
+        });
+      } else {
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${token.name} 连接失败`,
+          type: "error",
+        });
+      }
+    } catch (error) {
+      connectionStatus.value[tokenId] = "failed";
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${token.name} 连接出错: ${error.message}`,
+        type: "error",
+      });
+    }
+  }
+};
+
+const disconnectSelectedTokens = () => {
+  if (selectedTokens.value.length === 0) {
+    message.warning("请先选择要断开的账号");
+    return;
+  }
+
+  for (const tokenId of selectedTokens.value) {
+    const token = tokens.value.find((t) => t.id === tokenId);
+    tokenStore.closeWebSocketConnection(tokenId);
+    connectionStatus.value[tokenId] = "disconnected";
+    if (token) {
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${token.name} 已断开连接`,
+        type: "info",
+      });
+    }
+  }
+};
+
+// ======================
+// Search & Expand/Collapse
+// ======================
+const searchKeyword = ref("");
+const expandAll = ref(true);
+
+const filteredTokens = computed(() => {
+  if (!searchKeyword.value.trim()) {
+    return sortedTokens.value;
+  }
+  const keyword = searchKeyword.value.toLowerCase();
+  return sortedTokens.value.filter((token) =>
+    token.name.toLowerCase().includes(keyword) ||
+    (token.server && token.server.toLowerCase().includes(keyword))
+  );
+});
+
+// ======================
+// Refresh Token / Reset Cache
+// ======================
+const refreshAllTokens = async () => {
+  if (selectedTokens.value.length === 0) {
+    message.warning("请先选择要刷新的账号");
+    return;
+  }
+
+  addLog({
+    time: new Date().toLocaleTimeString(),
+    message: "=== 开始刷新选中账号的Token ===",
+    type: "info",
+  });
+
+  for (const tokenId of selectedTokens.value) {
+    try {
+      await tokenStore.refreshToken(tokenId);
+      const token = tokens.value.find((t) => t.id === tokenId);
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${token?.name || tokenId} Token刷新成功`,
+        type: "success",
+      });
+    } catch (error) {
+      const token = tokens.value.find((t) => t.id === tokenId);
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${token?.name || tokenId} Token刷新失败: ${error.message}`,
+        type: "error",
+      });
+    }
+  }
+
+  addLog({
+    time: new Date().toLocaleTimeString(),
+    message: "=== Token刷新完成 ===",
+    type: "info",
+  });
+};
+
+const resetCache = () => {
+  if (confirm("确定要重置所有缓存吗？这将清除所有本地存储的任务数据。")) {
+    storage.clear();
+    message.success("缓存已重置");
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: "=== 缓存已重置 ===",
+      type: "warning",
+    });
+    // Reload page to apply changes
+    window.location.reload();
+  }
+};
 
 // ======================
 // Scheduled Tasks Feature
@@ -3589,13 +3948,13 @@ const manualExecuteTask = async (task) => {
   }
 };
 
-// Load scheduled tasks from localStorage
+// Load scheduled tasks from storage
 const loadScheduledTasks = () => {
   try {
-    const saved = localStorage.getItem("scheduledTasks");
+    const saved = storage.get("scheduledTasks");
 
     if (saved) {
-      const parsed = JSON.parse(saved);
+      const parsed = typeof saved === "string" ? JSON.parse(saved) : saved;
 
       // Ensure we have an array
       scheduledTasks.value = Array.isArray(parsed) ? parsed : [];
@@ -3608,14 +3967,10 @@ const loadScheduledTasks = () => {
   }
 };
 
-// Save scheduled tasks to localStorage
+// Save scheduled tasks to storage
 const saveScheduledTasks = () => {
   try {
-    const dataToSave = JSON.stringify(scheduledTasks.value);
-
-    localStorage.setItem("scheduledTasks", dataToSave);
-    // Verify save was successful
-    const saved = localStorage.getItem("scheduledTasks");
+    storage.set("scheduledTasks", scheduledTasks.value);
   } catch (error) {
     console.error("Failed to save scheduled tasks:", error);
   }
@@ -3860,12 +4215,12 @@ const exportConfig = () => {
     // Gather token settings
     const tokenSettings = [];
     tokens.value.forEach((token) => {
-      const settings = localStorage.getItem(`daily-settings:${token.id}`);
+      const settings = storage.get(`daily-settings:${token.id}`);
       if (settings) {
         try {
           tokenSettings.push({
             tokenId: token.id,
-            settings: JSON.parse(settings),
+            settings: typeof settings === "string" ? JSON.parse(settings) : settings,
           });
         } catch (e) {
           console.warn(`Failed to parse settings for token ${token.id}`, e);
@@ -4013,9 +4368,9 @@ const importConfig = async ({ file }) => {
         if (Array.isArray(importData.tokenSettings)) {
           importData.tokenSettings.forEach((item) => {
             if (item.tokenId && item.settings) {
-              localStorage.setItem(
+              storage.set(
                 `daily-settings:${item.tokenId}`,
-                JSON.stringify(item.settings),
+                item.settings,
               );
             }
           });
@@ -4257,13 +4612,13 @@ const startScheduler = () => {
         if (shouldRun) {
           // Check if the task was already executed in the last minute to avoid duplicate execution
           const taskExecutionKey = `${task.id}_${now.getDate()}_${now.getHours()}_${now.getMinutes()}`;
-          const lastExecutionKey = localStorage.getItem(
+          const lastExecutionKey = storage.get(
             `lastTaskExecution_${task.id}`,
           );
 
           if (lastExecutionKey !== taskExecutionKey) {
             // Update last execution time
-            localStorage.setItem(
+            storage.set(
               `lastTaskExecution_${task.id}`,
               taskExecutionKey,
             );
@@ -4369,19 +4724,19 @@ const verifyTaskDependencies = async (task) => {
     type: "info",
   });
 
-  // Verify localStorage is available
+  // Verify storage is available
   try {
-    localStorage.setItem("test", "test");
-    localStorage.removeItem("test");
+    storage.set("test", "test");
+    storage.remove("test");
     addLog({
       time: new Date().toLocaleTimeString(),
-      message: "✅ localStorage可用",
+      message: "✅ storage可用",
       type: "info",
     });
   } catch (error) {
     addLog({
       time: new Date().toLocaleTimeString(),
-      message: `❌ localStorage不可用: ${error.message}`,
+      message: `❌ storage不可用: ${error.message}`,
       type: "error",
     });
     return false;
@@ -4928,7 +5283,7 @@ const clearAllItems = () => {
 
 const loadSettings = (tokenId) => {
   try {
-    const raw = localStorage.getItem(`daily-settings:${tokenId}`);
+    const raw = storage.get(`daily-settings:${tokenId}`);
     const defaultSettings = {
       arenaFormation: 1,
       towerFormation: 1,
@@ -4942,7 +5297,7 @@ const loadSettings = (tokenId) => {
       claimEmail: true,
       blackMarketPurchase: true,
     };
-    return raw ? { ...defaultSettings, ...JSON.parse(raw) } : defaultSettings;
+    return raw ? { ...defaultSettings, ...(typeof raw === "string" ? JSON.parse(raw) : raw) } : defaultSettings;
   } catch (error) {
     console.error("Failed to load settings:", error);
     return null;
@@ -4959,9 +5314,9 @@ const openSettings = (token) => {
 
 const saveSettings = () => {
   if (currentSettingsTokenId.value) {
-    localStorage.setItem(
+    storage.set(
       `daily-settings:${currentSettingsTokenId.value}`,
-      JSON.stringify(currentSettings),
+      currentSettings,
     );
     message.success(`已保存 ${currentSettingsTokenName.value} 的设置`);
     showSettingsModal.value = false;
@@ -4991,8 +5346,8 @@ const openTaskTemplateModal = () => {
 };
 
 const loadTaskTemplates = () => {
-  const templates = localStorage.getItem("task-templates");
-  const parsed = templates ? JSON.parse(templates) : [];
+  const templates = storage.get("task-templates");
+  const parsed = templates ? (typeof templates === "string" ? JSON.parse(templates) : templates) : [];
   taskTemplates.value = parsed;
   return parsed;
 };
@@ -5029,19 +5384,19 @@ const applyTemplate = () => {
   }
 
   // 应用模板到选中的账号
-  let successCount = 0;
-  selectedTokensForApply.value.forEach((tokenId) => {
-    // 保存账号设置时同时保存模板ID
-    const accountSettings = {
-      ...template.settings,
-      templateId: template.id, // 记录模板ID
-    };
-    localStorage.setItem(
-      `daily-settings:${tokenId}`,
-      JSON.stringify(accountSettings),
-    );
-    successCount++;
-  });
+    let successCount = 0;
+    selectedTokensForApply.value.forEach((tokenId) => {
+      // 保存账号设置时同时保存模板ID
+      const accountSettings = {
+        ...template.settings,
+        templateId: template.id, // 记录模板ID
+      };
+      storage.set(
+        `daily-settings:${tokenId}`,
+        accountSettings,
+      );
+      successCount++;
+    });
 
   message.success(`已成功应用模板到 ${successCount} 个账号`);
   showApplyTemplateModal.value = false;
@@ -5088,8 +5443,8 @@ const updateTaskTemplate = () => {
     updatedAt: new Date().toISOString(),
   };
 
-  // 保存模板到localStorage
-  localStorage.setItem("task-templates", JSON.stringify(templates));
+  // 保存模板到storage
+  storage.set("task-templates", templates);
 
   // 更新模板列表
   taskTemplates.value = templates;
@@ -5108,8 +5463,8 @@ const deleteTaskTemplate = (templateId) => {
     const templates = loadTaskTemplates();
     const filteredTemplates = templates.filter((t) => t.id !== templateId);
 
-    // 保存模板到localStorage
-    localStorage.setItem("task-templates", JSON.stringify(filteredTemplates));
+    // 保存模板到storage
+    storage.set("task-templates", filteredTemplates);
 
     // 更新模板列表
     taskTemplates.value = filteredTemplates;
@@ -5148,10 +5503,10 @@ const loadAccountTemplateReferences = () => {
 
   // 遍历所有账号，获取其模板引用
   sortedTokens.value.forEach((token) => {
-    const settingsStr = localStorage.getItem(`daily-settings:${token.id}`);
-    if (settingsStr) {
+    const settingsData = storage.get(`daily-settings:${token.id}`);
+    if (settingsData) {
       try {
-        const settings = JSON.parse(settingsStr);
+        const settings = typeof settingsData === "string" ? JSON.parse(settingsData) : settingsData;
         const templateId = settings.templateId;
         const template = templates.find((t) => t.id === templateId);
 
@@ -5220,7 +5575,7 @@ const saveTaskTemplate = () => {
 
     // 添加新模板
     templates.push(template);
-    localStorage.setItem("task-templates", JSON.stringify(templates));
+    storage.set("task-templates", templates);
 
     // 更新模板列表
     taskTemplates.value = templates;
@@ -5492,6 +5847,94 @@ const addLog = (log) => {
       // 忽略错误
     }
   });
+};
+
+// ======================
+// Unified Error Handling
+// ======================
+const handleError = (error, context = "") => {
+  const errorMessage = error?.message || error?.toString() || "未知错误";
+  const contextStr = context ? `[${context}] ` : "";
+
+  console.error(`${contextStr}Error:`, error);
+
+  addLog({
+    time: new Date().toLocaleTimeString(),
+    message: `${contextStr}错误: ${errorMessage}`,
+    type: "error",
+  });
+
+  // 显示用户友好的错误提示
+  message.error(`${contextStr}操作失败: ${errorMessage}`);
+
+  return errorMessage;
+};
+
+// ======================
+// Retry Mechanism
+// ======================
+const withRetry = async (fn, options = {}) => {
+  const {
+    maxRetries = 3,
+    retryDelay = 1000,
+    backoffMultiplier = 2,
+    context = "",
+    shouldRetry = () => true,
+  } = options;
+
+  let lastError;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      if (attempt === maxRetries || !shouldRetry(error)) {
+        break;
+      }
+
+      const delay = retryDelay * Math.pow(backoffMultiplier, attempt);
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${context ? `[${context}] ` : ""}第 ${attempt + 1} 次尝试失败: ${error.message}，${delay}ms 后重试...`,
+        type: "warning",
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError;
+};
+
+// ======================
+// Batch Operation Wrapper
+// ======================
+const executeWithErrorHandling = async (operation, tokenId, operationName) => {
+  const token = tokens.value.find((t) => t.id === tokenId);
+  const tokenName = token?.name || tokenId;
+
+  try {
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `${tokenName}: 开始执行 ${operationName}`,
+      type: "info",
+    });
+
+    const result = await operation();
+
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `${tokenName}: ${operationName} 完成`,
+      type: "success",
+    });
+
+    return result;
+  } catch (error) {
+    handleError(error, `${tokenName} - ${operationName}`);
+    throw error;
+  }
 };
 
 watch(autoScrollLog, (newValue) => {
