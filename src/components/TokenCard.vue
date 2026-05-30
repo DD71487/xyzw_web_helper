@@ -373,6 +373,7 @@ const emit = defineEmits([
   "drag-start",
   "drag-end",
   "drop",
+  "drag-update-target",
   "update:isTowerExpanded",
   "update:isCarExpanded",
   "update:isClimbTowerExpanded",
@@ -387,12 +388,12 @@ const tokenStore = useTokenStore();
 
 const gameData = computed(() => tokenStore.getTokenGameData(props.token.id));
 const connectionStatus = computed(() => {
-  return tokenStore.wsConnections[props.token.id]?.status || "disconnected";
+  return tokenStore.getWebSocketStatus(props.token.id) || "disconnected";
 });
 const isTokenRunning = computed(() => tokenStore.isTokenRunning(props.token.id));
 
 const tokenGroups = computed(() => {
-  return tokenStore.getTokenGroups?.(props.token.id) || [];
+  return tokenStore.getTokenGroups(props.token.id) || [];
 });
 
 const lastRefreshTime = computed(() => {

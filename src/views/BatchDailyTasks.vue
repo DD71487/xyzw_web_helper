@@ -6642,9 +6642,6 @@ const taskFunctionRegistry = {
   batchClaimBoxPointReward,
   batchFish,
   batchRecruit,
-  batchOpenDiamondBox,
-  batchOpenFragmentPacks,
-  openBoxWeeklyRewardModal,
   batchHeroUpgrade,
   batchBookUpgrade,
   batchClaimStarRewards,
@@ -6656,33 +6653,8 @@ const taskFunctionRegistry = {
   // Legacy tasks
   batchLegacyClaim,
   batchLegacyGiftSendEnhanced,
-  // Store tasks
-  charge_claimaddup_rewards,
-  gacha_drawreward,
-  claim_recruit_welfare,
-  pkroom_appoint,
-  claim_weird_tower_all,
-  claim_weird_tower_pass,
-  buy_super_spirit_shell,
-  buy_top_rod_package,
-  weekly_market_free_gift,
-  store_buy_bronze,
-  store_buy_platinum,
-  store_buy_gold_rod,
-  store_buy_jade,
-  legion_buy_red_jade,
-  legion_buy_spotted_egg,
-  use_spotted_egg,
-  // Nightmare tasks
-  nightmare_draw_lottery,
-  nightmare_claim_book_reward,
-  star_drawturntable,
-  batch_star_challenge,
   // War guess
-  claim_guess_coin,
-  openLegionStoreModal,
-  // Car research
-  batchCarResearchUpgrade,
+  batchWarGuessCheer,
 };
 
 const getTaskFunction = (taskName) => {
@@ -6848,6 +6820,18 @@ const stopBatch = () => {
 .token-item {
   display: flex;
   align-items: center;
+}
+
+.expand-collapse-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.expand-collapse-buttons .button-group {
+  display: flex;
+  gap: 2px;
 }
 
 .log-card {
