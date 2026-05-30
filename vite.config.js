@@ -1,8 +1,9 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
-  import fs from "fs";
+import fs from "fs";
 import { fileURLToPath } from "url";
+import UnoCSS from "unocss/vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -51,7 +52,6 @@ export default defineConfig(async () => {
         "component resolvers",
       )
     : null;
-  const unoCssModule = await safeImport("unocss/vite", "UnoCSS");
   const vueDevToolsModule = await safeImport(
     "vite-plugin-vue-devtools",
     "Vue DevTools",
@@ -86,7 +86,6 @@ export default defineConfig(async () => {
       : [],
   });
 
-  const unoCssPlugin = unoCssModule?.default?.();
   const vueDevToolsPlugin = vueDevToolsModule?.default?.();
   const vueI18nPlugin = vueI18nModule?.default?.({
     module: "vue-i18n",
@@ -98,7 +97,7 @@ export default defineConfig(async () => {
     vue(),
     vueDevToolsPlugin,
     basicSsl && basicSsl(),
-    unoCssPlugin,
+    UnoCSS(),
     autoImportPlugin,
     componentsPlugin,
     vueI18nPlugin,
