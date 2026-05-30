@@ -2,6 +2,84 @@ import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
+// =====================
+// Token 游戏数据类型
+// =====================
+
+export interface TokenGameData {
+  roleInfo: any;
+  hangUpStatus?: {
+    isActive: boolean;
+    remainingTime: number;
+    elapsedTime: number;
+    endTime: string | null;
+  };
+  saltJarStatus?: {
+    isRunning: boolean;
+    remainingTime: number;
+    stopTime: number;
+  };
+  dailyTaskStatus?: {
+    progress: number;
+    complete: string[];
+  };
+  monthlyTaskStatus?: {
+    fish: number;
+    arena: number;
+    fishTarget: number;
+    arenaTarget: number;
+    totalProgress: number;
+  };
+  towerData?: {
+    floor: string;
+    maxFloor: string;
+    energy: number;
+    maxEnergy: number;
+    isExpanded: boolean;
+    isRefreshing: boolean;
+  };
+  weirdTowerData?: {
+    floor: string;
+    energy: number;
+    maxEnergy: number;
+    lotteryLeftCnt: number;
+    isExpanded: boolean;
+    isRefreshing: boolean;
+  };
+  carStatus?: {
+    availableCars: number;
+    onMissionCars: number;
+    claimableCars: number;
+    totalCars: number;
+    cars: any[];
+    isLoading: boolean;
+    freeRaidCnt: number;
+    successRaidCnt: number;
+  };
+  arenaRank?: number;
+  studyStatus?: {
+    isAnswering: boolean;
+    questionCount: number;
+    answeredCount: number;
+    status: string;
+    isCompleted: boolean;
+    maxCorrectNum: number;
+    thisWeek: boolean;
+  };
+  legacyStatus?: {
+    isAvailable: boolean;
+    quantity: number;
+    lastClaimTime: string | null;
+  };
+  lastUpdated: string | null;
+}
+
+export interface TokenRunningState {
+  isRunning: boolean;
+  currentTask: string;
+  startTime: string | null;
+}
+
 import { g_utils, ProtoMsg } from "@/utils/bonProtocol";
 import { gameLogger, tokenLogger, wsLogger } from "@/utils/logger";
 import { XyzwWebSocketClient } from "@/utils/xyzwWebSocket";
@@ -100,6 +178,15 @@ const activeConnections = useLocalStorage<Record<string, any>>("activeConnection
 
 // Token分组管理
 export const tokenGroups = useLocalStorage<TokenGroup[]>("tokenGroups", []);
+
+// Token游戏数据缓存（每个token独立存储）
+const tokenGameDataCache = ref<Record<string, TokenGameData>>({});
+
+// Token运行状态
+const tokenRunningStates = ref<Record<string, TokenRunningState>>({});
+
+// 自动刷新定时器
+let autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
 // =====================
 // Store 定义
@@ -1479,6 +1566,93 @@ export const useTokenStore = defineStore("tokens", () => {
   };
 
   // =====================
+  // Token 游戏数据管理
+  // =====================
+
+  const getTokenGameData = (tokenId: string): TokenGameData | null => {
+    return tokenGameDataCache.value[tokenId] || null;
+  };
+
+  const setTokenGameData = (tokenId: string, data: Partial<TokenGameData>) => {
+    const existing = tokenGameDataCache.value[tokenId];
+    tokenGameDataCache.value[tokenId] = {
+      ...existing,
+      ...data,
+      lastUpdated: new Date().toISOString(),
+    };
+  };
+
+  const updateTokenGameData = (tokenId: string, path: string, value: any) => {
+    const existing = tokenGameDataCache.value[tokenId] || {};
+    const keys = path.split('.');
+    let target: any = existing;
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (!target[keys[i]]) target[keys[i]] = {};
+      target = target[keys[i]];
+    }
+    target[keys[keys.length - 1]] = value;
+    existing.lastUpdated = new Date().toISOString();
+    tokenGameDataCache.value[tokenId] = existing;
+  };
+
+  const clearTokenGameData = (tokenId: string) => {
+    delete tokenGameDataCache.value[tokenId];
+  };
+
+  // =====================
+  // Token 运行状态管理
+  // =====================
+
+  const isTokenRunning = (tokenId: string): boolean => {
+    return tokenRunningStates.value[tokenId]?.isRunning || false;
+  };
+
+  const setTokenRunning = (tokenId: string, isRunning: boolean, currentTask = "") => {
+    tokenRunningStates.value[tokenId] = {
+      isRunning,
+      currentTask,
+      startTime: isRunning ? new Date().toISOString() : null,
+    };
+  };
+
+  const getTokenRunningState = (tokenId: string): TokenRunningState | null => {
+    return tokenRunningStates.value[tokenId] || null;
+  };
+
+  // =====================
+  // 自动刷新管理
+  // =====================
+
+  const startAutoRefresh = (intervalMs = 30000) => {
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+    }
+    autoRefreshInterval = setInterval(() => {
+      // 刷新所有已连接token的游戏数据
+      Object.entries(wsConnections.value).forEach(([tokenId, connection]) => {
+        if (connection.status === "connected" && connection.client) {
+          sendGetRoleInfo(tokenId).catch((err) => {
+            wsLogger.debug(`自动刷新角色信息失败 [${tokenId}]:`, err);
+          });
+        }
+      });
+    }, intervalMs);
+    tokenLogger.info(`自动刷新已启动，间隔: ${intervalMs}ms`);
+  };
+
+  const stopAutoRefresh = () => {
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+      tokenLogger.info("自动刷新已停止");
+    }
+  };
+
+  const isAutoRefreshRunning = () => {
+    return autoRefreshInterval !== null;
+  };
+
+  // =====================
   // Token分组管理方法
   // =====================
 
@@ -1614,6 +1788,22 @@ export const useTokenStore = defineStore("tokens", () => {
     // battleVersion
     setBattleVersion,
     getBattleVersion,
+
+    // Token游戏数据管理
+    getTokenGameData,
+    setTokenGameData,
+    updateTokenGameData,
+    clearTokenGameData,
+
+    // Token运行状态管理
+    isTokenRunning,
+    setTokenRunning,
+    getTokenRunningState,
+
+    // 自动刷新管理
+    startAutoRefresh,
+    stopAutoRefresh,
+    isAutoRefreshRunning,
 
     // 调试工具方法
     validateToken,

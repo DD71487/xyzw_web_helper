@@ -278,81 +278,61 @@
           </div>
 
           <n-space vertical>
-            <n-checkbox
-              :checked="isAllSelected"
-              :indeterminate="isIndeterminate"
-              @update:checked="handleSelectAll"
-            >
-              全选
-            </n-checkbox>
-            <n-checkbox-group v-model:value="selectedTokens">
-              <n-grid
-                :x-gap="12"
-                :y-gap="8"
-                :cols="batchSettings.tokenListColumns"
+            <!-- 全选 + 展开/收起控制 -->
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <n-checkbox
+                :checked="isAllSelected"
+                :indeterminate="isIndeterminate"
+                @update:checked="handleSelectAll"
               >
-                <n-grid-item v-for="token in (searchKeyword ? filteredTokens : sortedTokens)" :key="token.id">
-                  <div class="token-row">
-                    <n-checkbox
-                      :value="token.id"
-                      :label="token.name"
-                      style="flex: 1"
-                    >
-                      <div class="token-item">
-                        <span>{{ token.name }}</span>
-                        <n-tag
-                          size="small"
-                          :type="getStatusType(token.id)"
-                          style="margin-left: 8px"
-                        >
-                          {{ getStatusText(token.id) }}
-                        </n-tag>
-                        <!-- 连接状态 -->
-                        <n-tag
-                          v-if="connectionStatus[token.id]"
-                          size="small"
-                          :type="connectionStatus[token.id] === 'connected' ? 'success' : connectionStatus[token.id] === 'connecting' ? 'warning' : 'error'"
-                          style="margin-left: 4px"
-                        >
-                          {{ connectionStatus[token.id] === 'connected' ? '已连接' : connectionStatus[token.id] === 'connecting' ? '连接中' : '断开' }}
-                        </n-tag>
-                        <!-- 显示token所属的分组 -->
-                        <div
-                          v-if="expandAll && tokenStore.getTokenGroups(token.id).length > 0"
-                          style="
-                            margin-left: 8px;
-                            display: inline-flex;
-                            gap: 4px;
-                            flex-wrap: wrap;
-                          "
-                        >
-                          <n-tag
-                            v-for="group in tokenStore.getTokenGroups(token.id)"
-                            :key="group.id"
-                            size="small"
-                            :color="{ color: group.color, textColor: 'white' }"
-                            style="font-size: 11px"
-                          >
-                            {{ group.name }}
-                          </n-tag>
-                        </div>
-                      </div>
-                    </n-checkbox>
-                    <n-button
-                      size="tiny"
-                      circle
-                      @click.stop="openSettings(token)"
-                    >
-                      <template #icon>
-                        <n-icon>
-                          <Settings />
-                        </n-icon>
-                      </template>
-                    </n-button>
-                  </div>
-                </n-grid-item>
-              </n-grid>
-            </n-checkbox-group>
+                全选
+              </n-checkbox>
+              <div class="expand-collapse-buttons">
+                <div class="button-group">
+                  <n-button size="tiny" @click="isTowerExpandedForAll = true">展开闯关</n-button>
+                  <n-button size="tiny" @click="isTowerExpandedForAll = false">收起闯关</n-button>
+                </div>
+                <div class="button-group">
+                  <n-button size="tiny" @click="isCarExpandedForAll = true">展开赛车</n-button>
+                  <n-button size="tiny" @click="isCarExpandedForAll = false">收起赛车</n-button>
+                </div>
+                <div class="button-group">
+                  <n-button size="tiny" @click="isClimbTowerExpandedForAll = true">展开爬塔</n-button>
+                  <n-button size="tiny" @click="isClimbTowerExpandedForAll = false">收起爬塔</n-button>
+                </div>
+                <div class="button-group">
+                  <n-button size="tiny" @click="isWeirdTowerExpandedForAll = true">展开怪塔</n-button>
+                  <n-button size="tiny" @click="isWeirdTowerExpandedForAll = false">收起怪塔</n-button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TokenCard 网格 -->
+            <n-grid
+              :x-gap="12"
+              :y-gap="12"
+              :cols="batchSettings.tokenListColumns"
+            >
+              <n-grid-item v-for="token in (searchKeyword ? filteredTokens : sortedTokens)" :key="token.id">
+                <TokenCard
+                  :token="token"
+                  :is-selected="selectedTokens.includes(token.id)"
+                  :is-tower-expanded="isTowerExpandedForAll"
+                  :is-car-expanded="isCarExpandedForAll"
+                  :is-climb-tower-expanded="isClimbTowerExpandedForAll"
+                  :is-weird-tower-expanded="isWeirdTowerExpandedForAll"
+                  :is-drop-target="targetTokenId === token.id"
+                  @select="handleTokenSelect"
+                  @settings="openSettingsById"
+                  @toggle-connection="handleToggleConnection"
+                  @quick-action="handleTokenQuickAction"
+                  @drag-start="handleTokenDragStart"
+                  @drag-end="handleTokenDragEnd"
+                  @drop="handleTokenDrop"
+                  @drag-update-target="handleTokenDragUpdateTarget"
+                />
+              </n-grid-item>
+            </n-grid>
             <div v-if="searchKeyword && filteredTokens.length === 0" style="text-align: center; color: #86909c; padding: 12px;">
               未找到匹配的账号
             </div>
@@ -3004,6 +2984,7 @@ import { DailyTaskRunner } from "@/utils/dailyTaskRunner";
 import { preloadQuestions } from "@/utils/studyQuestionsFromJSON.js";
 import { useMessage } from "naive-ui";
 import { Settings } from "@vicons/ionicons5";
+import TokenCard from "@/components/TokenCard.vue";
 
 // Import batch task modules
 import {
@@ -3064,7 +3045,7 @@ import { merchantConfig, goldItemsConfig } from "@/utils/dreamConstants";
 // Import new infrastructure modules
 import { storage } from "@/utils/storage";
 import { wakeLockManager } from "@/utils/wakeLock";
-import { crossPlatform } from "@/utils/crossPlatform";
+import { getOptimalPoolSize, downloadFile } from "@/utils/crossPlatform";
 
 // Initialize token store, message service, and task runner
 const tokenStore = useTokenStore();
@@ -3737,6 +3718,15 @@ const disconnectSelectedTokens = () => {
 // ======================
 const searchKeyword = ref("");
 const expandAll = ref(true);
+
+// TokenCard 展开/收起控制（全局）
+const isTowerExpandedForAll = ref(false);
+const isCarExpandedForAll = ref(false);
+const isClimbTowerExpandedForAll = ref(false);
+const isWeirdTowerExpandedForAll = ref(false);
+
+// 拖拽目标
+const targetTokenId = ref(null);
 
 const filteredTokens = computed(() => {
   if (!searchKeyword.value.trim()) {
@@ -4752,9 +4742,9 @@ const verifyTaskDependencies = async (task) => {
     return false;
   }
 
-  // Verify task functions exist
+  // Verify task functions exist (using registry instead of eval)
   for (const taskName of task.selectedTasks) {
-    const taskFunction = eval(taskName);
+    const taskFunction = getTaskFunction(taskName);
     if (typeof taskFunction !== "function") {
       addLog({
         time: new Date().toLocaleTimeString(),
@@ -4919,8 +4909,8 @@ const executeScheduledTask = async (task) => {
         type: "info",
       });
 
-      // Call the task function dynamically
-      const taskFunction = eval(taskName);
+      // Call the task function from registry (replaces eval for security)
+      const taskFunction = getTaskFunction(taskName);
       if (typeof taskFunction === "function") {
         // For batch operations, pass isScheduledTask = true
         // 具体的batch任务函数内部会使用ensureConnection管理并行连接
@@ -5973,6 +5963,120 @@ const clearLogs = () => {
   message.success("日志已清空");
 };
 
+// ======================
+// TokenCard Event Handlers
+// ======================
+
+const handleTokenSelect = (tokenId, checked) => {
+  if (checked) {
+    if (!selectedTokens.value.includes(tokenId)) {
+      selectedTokens.value.push(tokenId);
+    }
+  } else {
+    const index = selectedTokens.value.indexOf(tokenId);
+    if (index > -1) {
+      selectedTokens.value.splice(index, 1);
+    }
+  }
+};
+
+const openSettingsById = (tokenId) => {
+  const token = tokens.value.find((t) => t.id === tokenId);
+  if (token) {
+    openSettings(token);
+  }
+};
+
+const handleToggleConnection = (tokenId) => {
+  const status = tokenStore.getWebSocketStatus(tokenId);
+  if (status === "connected") {
+    tokenStore.closeWebSocketConnection(tokenId);
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `已断开账号: ${tokens.value.find((t) => t.id === tokenId)?.name || tokenId}`,
+      type: "info",
+    });
+  } else {
+    const token = tokens.value.find((t) => t.id === tokenId);
+    if (token) {
+      tokenStore.selectToken(tokenId, true);
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `正在连接账号: ${token.name}`,
+        type: "info",
+      });
+    }
+  }
+};
+
+const handleTokenQuickAction = (tokenId, action) => {
+  // 临时只选中该token执行操作
+  const previousSelection = [...selectedTokens.value];
+  selectedTokens.value = [tokenId];
+
+  switch (action) {
+    case "tower":
+      // 闯关操作
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `账号 ${tokens.value.find((t) => t.id === tokenId)?.name} 执行闯关`,
+        type: "info",
+      });
+      break;
+    case "climbTower":
+      climbTower();
+      break;
+    case "weirdTower":
+      climbWeirdTower();
+      break;
+    case "car":
+      batchSmartSendCar();
+      break;
+  }
+
+  // 恢复之前的选择（延迟恢复，让任务先执行）
+  setTimeout(() => {
+    selectedTokens.value = previousSelection;
+  }, 100);
+};
+
+// 拖拽处理
+const draggedTokenId = ref(null);
+
+const handleTokenDragStart = (tokenId, event) => {
+  draggedTokenId.value = tokenId;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", tokenId);
+  }
+};
+
+const handleTokenDragEnd = () => {
+  draggedTokenId.value = null;
+  targetTokenId.value = null;
+};
+
+const handleTokenDragUpdateTarget = (tokenId) => {
+  if (draggedTokenId.value && draggedTokenId.value !== tokenId) {
+    targetTokenId.value = tokenId;
+  }
+};
+
+const handleTokenDrop = (targetId, event) => {
+  event.preventDefault();
+  const sourceId = draggedTokenId.value;
+  if (sourceId && sourceId !== targetId) {
+    // 可以在这里实现拖拽排序逻辑
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      message: `拖拽: ${sourceId} -> ${targetId}`,
+      type: "info",
+    });
+  }
+  draggedTokenId.value = null;
+  targetTokenId.value = null;
+};
+
 const waitForConnection = async (
   tokenId,
   timeout = batchSettings.connectionTimeout,
@@ -6200,6 +6304,89 @@ const {
 
 const tasksLegacy = createTasksLegacy(createTaskDeps());
 const { batchLegacyClaim, batchLegacyGiftSendEnhanced } = tasksLegacy;
+
+// ======================
+// Task Function Registry (replaces eval for security)
+// ======================
+const taskFunctionRegistry = {
+  // Daily tasks
+  claimHangUpRewards,
+  batchAddHangUpTime,
+  resetBottles,
+  batchlingguanzi,
+  batchclubsign,
+  batchStudy,
+  batcharenafight,
+  batchSmartSendCar,
+  batchClaimCars,
+  store_purchase,
+  collection_claimfreereward,
+  batchGenieSweep,
+  // Dungeon tasks
+  climbTower,
+  batchmengjing,
+  skinChallenge,
+  batchClaimPeachTasks,
+  batchBuyDreamItems,
+  batchbaoku13,
+  batchbaoku45,
+  // Weird tower tasks
+  climbWeirdTower,
+  batchUseItems,
+  batchMergeItems,
+  batchClaimFreeEnergy,
+  // Item tasks
+  batchOpenBox,
+  batchOpenBoxByPoints,
+  batchClaimBoxPointReward,
+  batchFish,
+  batchRecruit,
+  batchOpenDiamondBox,
+  batchOpenFragmentPacks,
+  openBoxWeeklyRewardModal,
+  batchHeroUpgrade,
+  batchBookUpgrade,
+  batchClaimStarRewards,
+  legion_storebuygoods,
+  legionStoreBuySkinCoins,
+  // Arena tasks
+  batchTopUpFish,
+  batchTopUpArena,
+  // Legacy tasks
+  batchLegacyClaim,
+  batchLegacyGiftSendEnhanced,
+  // Store tasks
+  charge_claimaddup_rewards,
+  gacha_drawreward,
+  claim_recruit_welfare,
+  pkroom_appoint,
+  claim_weird_tower_all,
+  claim_weird_tower_pass,
+  buy_super_spirit_shell,
+  buy_top_rod_package,
+  weekly_market_free_gift,
+  store_buy_bronze,
+  store_buy_platinum,
+  store_buy_gold_rod,
+  store_buy_jade,
+  legion_buy_red_jade,
+  legion_buy_spotted_egg,
+  use_spotted_egg,
+  // Nightmare tasks
+  nightmare_draw_lottery,
+  nightmare_claim_book_reward,
+  star_drawturntable,
+  batch_star_challenge,
+  // War guess
+  claim_guess_coin,
+  openLegionStoreModal,
+  // Car research
+  batchCarResearchUpgrade,
+};
+
+const getTaskFunction = (taskName) => {
+  return taskFunctionRegistry[taskName] || null;
+};
 
 const startBatch = async () => {
   if (selectedTokens.value.length === 0) return;

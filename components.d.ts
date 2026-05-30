@@ -70,6 +70,7 @@ declare module 'vue' {
     TeamFormation: typeof import('./src/components/Team/TeamFormation.vue')['default']
     TeamStatus: typeof import('./src/components/Team/TeamStatus.vue')['default']
     ThemeToggle: typeof import('./src/components/Common/ThemeToggle.vue')['default']
+    TokenCard: typeof import('./src/components/TokenCard.vue')['default']
     TokenManager: typeof import('./src/components/TokenManager.vue')['default']
     TopClubListPageCard: typeof import('./src/components/cards/TopClubListPageCard.vue')['default']
     TopRankListPageCard: typeof import('./src/components/cards/TopRankListPageCard.vue')['default']
